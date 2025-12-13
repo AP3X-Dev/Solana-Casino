@@ -1,22 +1,26 @@
 import React from 'react';
 import { BrowserRouter } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import { WalletProvider } from './components/WalletProvider';
 import EnhancedNavigation from './components/layout/EnhancedNavigation';
 import AppRoutes from './routes';
-import { Toaster } from 'react-hot-toast';
 
 const App: React.FC = () => {
-
   return (
     <WalletProvider>
       <BrowserRouter>
-        <div className="min-h-screen bg-[var(--background)]">
+        <div className="min-h-screen bg-[var(--background)] text-[var(--text-primary)]">
+          <a
+            href="#main"
+            className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 bg-[var(--card)] border border-[var(--border)] px-4 py-2 rounded-lg"
+          >
+            Skip to content
+          </a>
           <EnhancedNavigation />
-          <main>
+          <main id="main" className="pt-24 pb-16">
             <AppRoutes />
           </main>
 
-          {/* Toast notifications */}
           <Toaster
             position="top-right"
             toastOptions={{

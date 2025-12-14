@@ -1,0 +1,31 @@
+# Dependencies
+node_modules
+server/node_modules
+
+# Build output
+dist
+dist-ssr
+server/dist
+coverage
+test-results
+
+# Local runtime data
+logs
+uploads
+backups
+*.log
+
+# VCS / editor
+.git
+.github
+.vscode
+.idea
+.DS_Store
+
+# Solana programs (not needed for runtime image)
+programs
+
+# Env files
+.env
+.env.*
+*.local

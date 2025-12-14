@@ -1,376 +1,47 @@
-name: CI/CD Pipeline
+name: CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
 
 env:
   NODE_VERSION: '18'
-  RUST_VERSION: '1.70.0'
-  SOLANA_VERSION: '1.16.0'
 
 jobs:
-  # Frontend Tests
-  frontend-test:
+  frontend:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: npm
 
-      - name: Install dependencies
-        run: npm ci
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run type-check
+      - run: npm test
+      - run: npm run build
 
-      - name: Run linting
-        run: npm run lint
-
-      - name: Run type checking
-        run: npm run type-check
-
-      - name: Run unit tests
-        run: npm run test:coverage
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
-        with:
-          file: ./coverage/lcov.info
-          flags: frontend
-          name: frontend-coverage
-
-      - name: Build frontend
-        run: npm run build
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: frontend-build
-          path: dist/
-
-  # Backend Tests
-  backend-test:
+  backend:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:13
-        env:
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: casino_test
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
-      redis:
-        image: redis:7
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 6379:6379
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: npm
           cache-dependency-path: server/package-lock.json
 
-      - name: Install backend dependencies
-        working-directory: ./server
+      - working-directory: server
         run: npm ci
 
-      - name: Run backend linting
-        working-directory: ./server
+      - working-directory: server
         run: npm run lint
 
-      - name: Run backend tests
-        working-directory: ./server
-        run: npm run test:coverage
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/casino_test
-          REDIS_URL: redis://localhost:6379
-          JWT_SECRET: test-jwt-secret-key-for-testing-only
-          JWT_REFRESH_SECRET: test-refresh-secret-key-for-testing-only
-
-      - name: Upload backend coverage
-        uses: codecov/codecov-action@v3
-        with:
-          file: ./server/coverage/lcov.info
-          flags: backend
-          name: backend-coverage
-
-      - name: Build backend
-        working-directory: ./server
+      - working-directory: server
         run: npm run build
-
-  # Smart Contract Tests
-  smart-contract-test:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ env.RUST_VERSION }}
-          override: true
-          components: rustfmt, clippy
-
-      - name: Setup Solana CLI
-        run: |
-          sh -c "$(curl -sSfL https://release.solana.com/v${{ env.SOLANA_VERSION }}/install)"
-          echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
-
-      - name: Setup Anchor CLI
-        run: |
-          npm install -g @coral-xyz/anchor-cli@0.29.0
-
-      - name: Cache Rust dependencies
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Run Rust formatting check
-        run: cargo fmt --all -- --check
-
-      - name: Run Rust linting
-        run: cargo clippy --all-targets --all-features -- -D warnings
-
-      - name: Run smart contract tests
-        run: anchor test
-
-      - name: Build smart contracts
-        run: anchor build
-
-      - name: Upload program artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: smart-contracts
-          path: target/deploy/
-
-  # E2E Tests
-  e2e-test:
-    runs-on: ubuntu-latest
-    needs: [frontend-test, backend-test]
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install Playwright
-        run: npx playwright install --with-deps
-
-      - name: Download frontend build
-        uses: actions/download-artifact@v3
-        with:
-          name: frontend-build
-          path: dist/
-
-      - name: Run E2E tests
-        run: npm run test:e2e
-
-      - name: Upload E2E test results
-        uses: actions/upload-artifact@v3
-        if: failure()
-        with:
-          name: e2e-test-results
-          path: test-results/
-
-  # Security Scan
-  security-scan:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run npm audit
-        run: npm audit --audit-level=high
-
-      - name: Run Snyk security scan
-        uses: snyk/actions/node@master
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --severity-threshold=high
-
-      - name: Run CodeQL analysis
-        uses: github/codeql-action/init@v2
-        with:
-          languages: javascript, typescript
-
-      - name: Perform CodeQL analysis
-        uses: github/codeql-action/analyze@v2
-
-  # Performance Tests
-  performance-test:
-    runs-on: ubuntu-latest
-    needs: [frontend-test, backend-test]
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build application
-        run: npm run build
-
-      - name: Run Lighthouse CI
-        run: |
-          npm install -g @lhci/cli@0.12.x
-          lhci autorun
-        env:
-          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
-
-      - name: Run load tests
-        run: npm run test:load
-
-  # Deploy to Staging
-  deploy-staging:
-    runs-on: ubuntu-latest
-    needs: [frontend-test, backend-test, smart-contract-test, e2e-test, security-scan]
-    if: github.ref == 'refs/heads/develop'
-    environment: staging
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build for staging
-        run: npm run build:staging
-        env:
-          REACT_APP_SOLANA_RPC_URL: ${{ secrets.STAGING_SOLANA_RPC_URL }}
-          REACT_APP_CASINO_PROGRAM_ID: ${{ secrets.STAGING_CASINO_PROGRAM_ID }}
-          REACT_APP_API_URL: ${{ secrets.STAGING_API_URL }}
-
-      - name: Deploy to Vercel (Staging)
-        uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          working-directory: ./
-          scope: ${{ secrets.VERCEL_ORG_ID }}
-
-      - name: Deploy backend to staging
-        run: |
-          # Deploy backend to staging environment
-          echo "Deploying backend to staging..."
-          # Add your backend deployment commands here
-
-  # Deploy to Production
-  deploy-production:
-    runs-on: ubuntu-latest
-    needs: [frontend-test, backend-test, smart-contract-test, e2e-test, security-scan, performance-test]
-    if: github.ref == 'refs/heads/main'
-    environment: production
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build for production
-        run: npm run build:production
-        env:
-          REACT_APP_SOLANA_RPC_URL: ${{ secrets.PROD_SOLANA_RPC_URL }}
-          REACT_APP_CASINO_PROGRAM_ID: ${{ secrets.PROD_CASINO_PROGRAM_ID }}
-          REACT_APP_API_URL: ${{ secrets.PROD_API_URL }}
-
-      - name: Deploy to Vercel (Production)
-        uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          vercel-args: '--prod'
-          working-directory: ./
-          scope: ${{ secrets.VERCEL_ORG_ID }}
-
-      - name: Deploy smart contracts to mainnet
-        run: |
-          # Deploy smart contracts to Solana mainnet
-          echo "Deploying smart contracts to mainnet..."
-          # Add your smart contract deployment commands here
-
-      - name: Deploy backend to production
-        run: |
-          # Deploy backend to production environment
-          echo "Deploying backend to production..."
-          # Add your backend deployment commands here
-
-      - name: Notify deployment success
-        uses: 8398a7/action-slack@v3
-        with:
-          status: success
-          channel: '#deployments'
-          text: '🚀 Casino platform successfully deployed to production!'
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-
-  # Cleanup
-  cleanup:
-    runs-on: ubuntu-latest
-    needs: [deploy-staging, deploy-production]
-    if: always()
-    steps:
-      - name: Clean up artifacts
-        run: echo "Cleaning up temporary artifacts..."

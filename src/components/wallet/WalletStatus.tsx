@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { Wallet, ExternalLink, Copy, Check } from 'lucide-react';
-import { cn } from '../../utils/cn';
 
 const WalletStatus: React.FC = () => {
   const { publicKey, wallet, disconnect } = useWallet();

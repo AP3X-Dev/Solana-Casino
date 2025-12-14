@@ -1,9 +1,9 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { 
-  Dice1, Dice2, Dice3, Dice4, Dice5, Dice6,
+  Dice6,
   Target, TrendingUp, Zap, Settings, History,
-  Volume2, VolumeX, Trophy, Star, Flame
+  Volume2, VolumeX, Flame
 } from 'lucide-react';
 import { useEnhancedGame } from '../../hooks/useEnhancedGame';
 
@@ -16,8 +16,6 @@ interface DiceState {
   multiplier: number;
   winChance: number;
 }
-
-const DiceIcons = [Dice1, Dice2, Dice3, Dice4, Dice5, Dice6];
 
 const UltraDiceRoll: React.FC = () => {
   const [state, setState] = useState<DiceState>({
@@ -94,12 +92,10 @@ const UltraDiceRoll: React.FC = () => {
 
   // Update dice value from game result
   useEffect(() => {
-    if (gameState.result?.outcome) {
-      setState(prev => ({ 
-        ...prev, 
-        diceValue: gameState.result.outcome[0] || 1 
-      }));
-    }
+    const outcome = gameState.result?.outcome;
+    if (typeof outcome !== 'number') return;
+
+    setState((prev) => ({ ...prev, diceValue: outcome }));
   }, [gameState.result]);
 
   const getDiceColor = (value: number) => {
@@ -445,30 +441,36 @@ const UltraDiceRoll: React.FC = () => {
                 Recent Rolls
               </h3>
               <div className="space-y-3 max-h-64 overflow-y-auto">
-                {gameHistory.slice(0, 5).map((game, index) => (
-                  <motion.div
-                    key={game.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    className="flex items-center justify-between p-3 rounded-xl bg-[var(--background-secondary)]"
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${getDiceColor(game.result.outcome?.[0] || 1)} flex items-center justify-center text-white font-bold text-sm`}>
-                        {game.result.outcome?.[0] || 1}
-                      </div>
-                      <div>
-                        <div className="font-medium">{game.betAmount} SOL</div>
-                        <div className="text-sm text-[var(--text-secondary)]">
-                          {new Date(game.timestamp).toLocaleTimeString()}
+                {gameHistory.slice(0, 5).map((game, index) => {
+                  const rolled = typeof game.result.outcome === 'number' ? game.result.outcome : 1;
+
+                  return (
+                    <motion.div
+                      key={game.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="flex items-center justify-between p-3 rounded-xl bg-[var(--background-secondary)]"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div
+                          className={`w-8 h-8 rounded-lg bg-gradient-to-br ${getDiceColor(rolled)} flex items-center justify-center text-white font-bold text-sm`}
+                        >
+                          {rolled}
+                        </div>
+                        <div>
+                          <div className="font-medium">{game.betAmount} SOL</div>
+                          <div className="text-sm text-[var(--text-secondary)]">
+                            {new Date(game.timestamp).toLocaleTimeString()}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div className={`font-bold ${game.won ? 'text-[var(--success)]' : 'text-[var(--error)]'}`}>
-                      {game.won ? `+${game.payout.toFixed(4)}` : `-${game.betAmount.toFixed(4)}`}
-                    </div>
-                  </motion.div>
-                ))}
+                      <div className={`font-bold ${game.won ? 'text-[var(--success)]' : 'text-[var(--error)]'}`}>
+                        {game.won ? `+${game.payout.toFixed(4)}` : `-${game.betAmount.toFixed(4)}`}
+                      </div>
+                    </motion.div>
+                  );
+                })}
               </div>
             </motion.div>
           </div>

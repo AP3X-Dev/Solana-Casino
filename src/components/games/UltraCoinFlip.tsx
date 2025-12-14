@@ -41,6 +41,30 @@ const UltraCoinFlip: React.FC = () => {
   const coinRef = useRef<HTMLDivElement>(null);
   const particlesRef = useRef<HTMLDivElement>(null);
 
+  // Create particle explosion effect
+  const createParticleExplosion = useCallback(() => {
+    if (!particlesRef.current) return;
+
+    const colors = ['#00d4ff', '#ff6b35', '#00ff88', '#ffd700'];
+    
+    for (let i = 0; i < 20; i++) {
+      const particle = document.createElement('div');
+      particle.className = 'absolute w-2 h-2 rounded-full animate-confetti';
+      particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+      particle.style.left = '50%';
+      particle.style.top = '50%';
+      particle.style.transform = `translate(-50%, -50%) rotate(${Math.random() * 360}deg)`;
+      particle.style.animationDelay = `${Math.random() * 0.5}s`;
+      particle.style.animationDuration = `${2 + Math.random() * 2}s`;
+      
+      particlesRef.current.appendChild(particle);
+      
+      setTimeout(() => {
+        particle.remove();
+      }, 4000);
+    }
+  }, []);
+
   // Enhanced coin flip with 3D physics
   const handleFlip = useCallback(async () => {
     if (!isConnected || gameState.isPlaying) return;
@@ -67,42 +91,17 @@ const UltraCoinFlip: React.FC = () => {
         setState(prev => ({ ...prev, showParticles: false }));
       }, 2000);
     }
-  }, [isConnected, gameState.isPlaying, state.betAmount, state.prediction, placeBet]);
-
-  // Create particle explosion effect
-  const createParticleExplosion = useCallback(() => {
-    if (!particlesRef.current) return;
-
-    const colors = ['#00d4ff', '#ff6b35', '#00ff88', '#ffd700'];
-    
-    for (let i = 0; i < 20; i++) {
-      const particle = document.createElement('div');
-      particle.className = 'absolute w-2 h-2 rounded-full animate-confetti';
-      particle.style.background = colors[Math.floor(Math.random() * colors.length)];
-      particle.style.left = '50%';
-      particle.style.top = '50%';
-      particle.style.transform = `translate(-50%, -50%) rotate(${Math.random() * 360}deg)`;
-      particle.style.animationDelay = `${Math.random() * 0.5}s`;
-      particle.style.animationDuration = `${2 + Math.random() * 2}s`;
-      
-      particlesRef.current.appendChild(particle);
-      
-      setTimeout(() => {
-        particle.remove();
-      }, 4000);
-    }
-  }, []);
+  }, [isConnected, gameState.isPlaying, state.betAmount, state.prediction, placeBet, createParticleExplosion]);
 
   // Update streak count based on game results
   useEffect(() => {
-    if (gameState.result) {
-      setState(prev => ({
-        ...prev,
-        streakCount: gameState.result.won 
-          ? prev.streakCount + 1 
-          : 0
-      }));
-    }
+    if (!gameState.result) return;
+
+    const { won } = gameState.result;
+    setState(prev => ({
+      ...prev,
+      streakCount: won ? prev.streakCount + 1 : 0
+    }));
   }, [gameState.result]);
 
   return (

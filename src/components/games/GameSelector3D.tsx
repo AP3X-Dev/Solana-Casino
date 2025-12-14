@@ -10,7 +10,7 @@ interface GameCard {
   id: string;
   title: string;
   description: string;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string }>;
   path: string;
   difficulty: 'Easy' | 'Medium' | 'Hard';
   minBet: number;

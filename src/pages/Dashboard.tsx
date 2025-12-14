@@ -1,5 +1,3 @@
-import React from 'react';
-import { useWallet } from '@solana/wallet-adapter-react';
 import { Trophy, Users, Wallet } from 'lucide-react';
 import { motion } from 'framer-motion';
 import StatCard from '../components/ui/StatCard';
@@ -7,8 +5,6 @@ import RecentGames from '../components/dashboard/RecentGames';
 import TopTokens from '../components/dashboard/TopTokens';
 
 const Dashboard = () => {
-  const { connected } = useWallet();
-
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -44,7 +40,5 @@ const Dashboard = () => {
     </motion.div>
   );
 };
-
-
 
 export default Dashboard;

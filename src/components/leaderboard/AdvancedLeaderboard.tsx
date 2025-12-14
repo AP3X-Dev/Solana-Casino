@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Trophy, Crown, Medal, Star, TrendingUp, TrendingDown,
-  Zap, Target, Coins, Calendar, Filter, Search,
+  Target, Coins, Search,
   Award, Flame, Gem, Sparkles
 } from 'lucide-react';
 
@@ -77,11 +77,10 @@ const AdvancedLeaderboard: React.FC<LeaderboardProps> = ({
   timeframe = 'weekly',
   category = 'profit'
 }) => {
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>(MOCK_LEADERBOARD);
+  const [leaderboard] = useState<LeaderboardEntry[]>(MOCK_LEADERBOARD);
   const [selectedTimeframe, setSelectedTimeframe] = useState(timeframe);
   const [selectedCategory, setSelectedCategory] = useState(category);
   const [searchTerm, setSearchTerm] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
 
   const getRankIcon = (rank: number) => {
     switch (rank) {
@@ -199,9 +198,7 @@ const AdvancedLeaderboard: React.FC<LeaderboardProps> = ({
 
       {/* Top 3 Podium */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        {filteredLeaderboard.slice(0, 3).map((entry, index) => {
-          const podiumOrder = [1, 0, 2]; // Second, First, Third
-          const actualIndex = podiumOrder[index];
+        {([1, 0, 2] as const).map((actualIndex, index) => {
           const player = filteredLeaderboard[actualIndex];
           if (!player) return null;
 

@@ -2,14 +2,14 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Zap, Crown, Gem, Star, Cherry, Coins, 
-  Volume2, VolumeX, Settings, History, TrendingUp,
+  Volume2, VolumeX, Settings, TrendingUp,
   Trophy, Flame, Sparkles, Diamond
 } from 'lucide-react';
 import { useEnhancedGame } from '../../hooks/useEnhancedGame';
 
 interface SlotSymbol {
   id: string;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string }>;
   name: string;
   multiplier: number;
   color: string;
@@ -53,7 +53,6 @@ const UltraSlots: React.FC = () => {
 
   const {
     gameState,
-    gameHistory,
     gameStats,
     balance,
     isConnected,
@@ -63,7 +62,6 @@ const UltraSlots: React.FC = () => {
   } = useEnhancedGame('slots');
 
   const reelRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const jackpotRef = useRef<HTMLDivElement>(null);
 
   // Handle spin
   const handleSpin = useCallback(async () => {
@@ -103,18 +101,19 @@ const UltraSlots: React.FC = () => {
 
   // Update symbols from game result
   useEffect(() => {
-    if (gameState.result?.outcome) {
-      const newSymbols = gameState.result.outcome.slice(0, 3);
-      setState(prev => ({ ...prev, currentSymbols: newSymbols }));
-      
-      // Check for jackpot
-      const isJackpot = newSymbols.every(symbol => symbol === 6); // All jackpot symbols
-      if (isJackpot) {
-        setState(prev => ({ ...prev, jackpotMode: true }));
-        setTimeout(() => {
-          setState(prev => ({ ...prev, jackpotMode: false }));
-        }, 5000);
-      }
+    const outcome = gameState.result?.outcome;
+    if (!outcome || !Array.isArray(outcome)) return;
+
+    const newSymbols = (outcome as number[]).slice(0, 3);
+    setState(prev => ({ ...prev, currentSymbols: newSymbols }));
+
+    // Check for jackpot
+    const isJackpot = newSymbols.every((symbol) => symbol === 6); // All jackpot symbols
+    if (isJackpot) {
+      setState(prev => ({ ...prev, jackpotMode: true }));
+      setTimeout(() => {
+        setState(prev => ({ ...prev, jackpotMode: false }));
+      }, 5000);
     }
   }, [gameState.result]);
 
@@ -422,7 +421,7 @@ const UltraSlots: React.FC = () => {
                 Paytable
               </h3>
               <div className="space-y-3 max-h-64 overflow-y-auto">
-                {SLOT_SYMBOLS.map((symbol, index) => (
+                {SLOT_SYMBOLS.map((symbol) => (
                   <div key={symbol.id} className="flex items-center justify-between p-2 rounded-lg bg-[var(--background-secondary)]">
                     <div className="flex items-center space-x-3">
                       {React.createElement(symbol.icon, { 

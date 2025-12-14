@@ -5,14 +5,14 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import {
   Home, Gamepad2, BarChart3, Trophy, Settings, Menu, X,
-  Coins, Dice1, Zap, Crown, Gem, Star, Sparkles,
-  User, Wallet, LogOut, Bell, Search
+  Coins, Dice1, Zap, Crown,
+  User, LogOut, Bell, Search
 } from 'lucide-react';
 
 interface NavItem {
   path: string;
   label: string;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string }>;
   gradient: string;
   description: string;
 }
@@ -305,7 +305,7 @@ const EnhancedNavigation: React.FC = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsOpen(false)}
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-45 lg:hidden"
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[45] lg:hidden"
             />
 
             {/* Mobile Menu Panel */}
@@ -314,7 +314,7 @@ const EnhancedNavigation: React.FC = () => {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="fixed top-0 right-0 h-full w-80 bg-[var(--card)] border-l border-[var(--border)] z-46 lg:hidden overflow-y-auto"
+              className="fixed top-0 right-0 h-full w-80 bg-[var(--card)] border-l border-[var(--border)] z-[46] lg:hidden overflow-y-auto"
             >
               <div className="p-6">
                 {/* Header */}

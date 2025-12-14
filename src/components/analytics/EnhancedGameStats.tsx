@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Line, Bar, Doughnut, Radar } from 'react-chartjs-2';
+import React, { useState, useMemo } from 'react';
+import { motion } from 'framer-motion';
+import { Line, Doughnut, Radar } from 'react-chartjs-2';
 import '../../utils/chartSetup'; // Import Chart.js setup
 import {
-  TrendingUp, TrendingDown, Target, Zap, Trophy, Clock,
-  DollarSign, Percent, BarChart3, PieChart, Activity,
-  Calendar, Filter, Download, Share, RefreshCw
+  TrendingUp, TrendingDown, Target, Zap, Trophy,
+  DollarSign, BarChart3, PieChart, Activity,
+  Download, Share, RefreshCw
 } from 'lucide-react';
 
 interface GameStatsData {
@@ -23,19 +23,11 @@ interface GameStatsData {
   lastPlayed: Date;
 }
 
-interface TimeSeriesData {
-  timestamp: number;
-  profit: number;
-  volume: number;
-  games: number;
-  winRate: number;
-}
-
 const EnhancedGameStats: React.FC = () => {
   const [timeRange, setTimeRange] = useState<'1h' | '24h' | '7d' | '30d' | 'all'>('24h');
   const [selectedMetric, setSelectedMetric] = useState<'profit' | 'volume' | 'games' | 'winRate'>('profit');
   const [isLoading, setIsLoading] = useState(false);
-  const [stats, setStats] = useState<GameStatsData>({
+  const stats: GameStatsData = {
     totalGames: 1247,
     totalWagered: 156.78,
     totalWon: 142.34,
@@ -48,7 +40,12 @@ const EnhancedGameStats: React.FC = () => {
     favoriteGame: 'Coin Flip',
     timeSpent: 47.5,
     lastPlayed: new Date(),
-  });
+  };
+
+  const handleRefresh = () => {
+    setIsLoading(true);
+    window.setTimeout(() => setIsLoading(false), 800);
+  };
 
   // Generate mock time series data
   const timeSeriesData = useMemo(() => {
@@ -177,7 +174,7 @@ const EnhancedGameStats: React.FC = () => {
     title: string;
     value: string | number;
     change?: number;
-    icon: React.ComponentType<any>;
+    icon: React.ComponentType<{ className?: string }>;
     color: string;
     format?: 'number' | 'currency' | 'percentage';
   }> = ({ title, value, change, icon: Icon, color, format = 'number' }) => {
@@ -268,7 +265,7 @@ const EnhancedGameStats: React.FC = () => {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => setIsLoading(true)}
+              onClick={handleRefresh}
               className="p-3 rounded-xl bg-[var(--card-hover)] hover:bg-[var(--accent)] transition-all"
             >
               <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />

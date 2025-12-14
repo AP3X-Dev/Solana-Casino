@@ -2,156 +2,131 @@ import SHA256 from 'crypto-js/sha256';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-// Types for provable fairness
-interface ServerSeed {
-  hashed: string;
-  revealed?: string;
-  nonce: number;
-  createdAt: number;
-  usedAt?: number;
-}
+export type ProvablyFairGameType = 'coinflip' | 'diceroll' | 'slots';
 
-interface ClientSeed {
-  value: string;
-  createdAt: number;
+export interface ProvableFairData {
+  clientSeed: string;
+  serverSeedHash: string;
+  serverSeed: string;
+  nonce: number;
 }
 
 interface ProvableFairnessState {
-  serverSeeds: ServerSeed[];
-  clientSeed: ClientSeed;
+  clientSeed: string;
   setClientSeed: (seed: string) => void;
-  addServerSeed: (hashedSeed: string) => void;
-  revealServerSeed: (index: number, plainSeed: string) => boolean;
-  getActiveServerSeed: () => ServerSeed | null;
+  serverSeed: string;
+  serverSeedHash: string;
   rotateServerSeed: () => void;
+  nonce: number;
+  nextNonce: () => number;
 }
 
-// Store for provable fairness
+export function hashServerSeed(serverSeed: string): string {
+  return SHA256(serverSeed).toString();
+}
+
+function randomString(length: number): string {
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  const bytes = new Uint8Array(length);
+
+  if (!globalThis.crypto?.getRandomValues) {
+    throw new Error('Secure RNG unavailable (crypto.getRandomValues missing)');
+  }
+
+  globalThis.crypto.getRandomValues(bytes);
+
+  let result = '';
+  for (let i = 0; i < length; i += 1) {
+    result += alphabet[bytes[i] % alphabet.length];
+  }
+
+  return result;
+}
+
+function deriveUint32(serverSeed: string, clientSeed: string, nonce: number, salt: string): number {
+  const combinedSeed = `${serverSeed}-${clientSeed}-${nonce}-${salt}`;
+  const hash = SHA256(combinedSeed).toString();
+  return Number.parseInt(hash.slice(0, 8), 16);
+}
+
+export function generateCoinFlipResult(
+  serverSeed: string,
+  clientSeed: string,
+  nonce: number
+): 'heads' | 'tails' {
+  return deriveUint32(serverSeed, clientSeed, nonce, 'coinflip') % 2 === 0 ? 'heads' : 'tails';
+}
+
+export function generateDiceRollResult(serverSeed: string, clientSeed: string, nonce: number): number {
+  return (deriveUint32(serverSeed, clientSeed, nonce, 'diceroll') % 100) + 1;
+}
+
+export function generateSlotsResult(
+  serverSeed: string,
+  clientSeed: string,
+  nonce: number
+): [number, number, number] {
+  const reel0 = deriveUint32(serverSeed, clientSeed, nonce, 'slots-0') % 7;
+  const reel1 = deriveUint32(serverSeed, clientSeed, nonce, 'slots-1') % 7;
+  const reel2 = deriveUint32(serverSeed, clientSeed, nonce, 'slots-2') % 7;
+  return [reel0, reel1, reel2];
+}
+
+export function verifyResult(
+  gameType: ProvablyFairGameType,
+  serverSeed: string,
+  clientSeed: string,
+  nonce: number,
+  expectedResult: 'heads' | 'tails' | number | [number, number, number]
+): boolean {
+  switch (gameType) {
+    case 'coinflip':
+      return generateCoinFlipResult(serverSeed, clientSeed, nonce) === expectedResult;
+    case 'diceroll':
+      return generateDiceRollResult(serverSeed, clientSeed, nonce) === expectedResult;
+    case 'slots': {
+      const actual = generateSlotsResult(serverSeed, clientSeed, nonce);
+      return (
+        Array.isArray(expectedResult) &&
+        expectedResult.length === 3 &&
+        actual[0] === expectedResult[0] &&
+        actual[1] === expectedResult[1] &&
+        actual[2] === expectedResult[2]
+      );
+    }
+    default:
+      return false;
+  }
+}
+
 export const useProvableFairnessStore = create<ProvableFairnessState>()(
   persist(
-    (set, get) => ({
-      serverSeeds: [],
-      clientSeed: {
-        value: generateRandomString(16),
-        createdAt: Date.now(),
-      },
-      setClientSeed: (seed: string) => set({
-        clientSeed: {
-          value: seed,
-          createdAt: Date.now(),
-        }
-      }),
-      addServerSeed: (hashedSeed: string) => set((state) => ({
-        serverSeeds: [
-          ...state.serverSeeds,
-          {
-            hashed: hashedSeed,
-            nonce: state.serverSeeds.length,
-            createdAt: Date.now(),
-          }
-        ]
-      })),
-      revealServerSeed: (index: number, plainSeed: string) => {
-        const { serverSeeds } = get();
-        if (index >= serverSeeds.length) return false;
-        
-        const seed = serverSeeds[index];
-        const hashedPlainSeed = SHA256(plainSeed).toString();
-        
-        if (hashedPlainSeed !== seed.hashed) return false;
-        
-        set({
-          serverSeeds: serverSeeds.map((s, i) => 
-            i === index ? { ...s, revealed: plainSeed, usedAt: Date.now() } : s
-          )
-        });
-        
-        return true;
-      },
-      getActiveServerSeed: () => {
-        const { serverSeeds } = get();
-        return serverSeeds.find(seed => !seed.revealed) || null;
-      },
-      rotateServerSeed: () => {
-        const newSeed = generateRandomString(32);
-        const hashedSeed = SHA256(newSeed).toString();
-        
-        // Store the plain seed securely on the server in a real implementation
-        // For demo purposes, we're just adding the hashed seed
-        get().addServerSeed(hashedSeed);
-      }
-    }),
+    (set, get) => {
+      const initialServerSeed = randomString(32);
+
+      return {
+        clientSeed: randomString(16),
+        setClientSeed: (seed: string) => set({ clientSeed: seed }),
+
+        serverSeed: initialServerSeed,
+        serverSeedHash: hashServerSeed(initialServerSeed),
+        rotateServerSeed: () => {
+          const nextSeed = randomString(32);
+          set({ serverSeed: nextSeed, serverSeedHash: hashServerSeed(nextSeed), nonce: 0 });
+        },
+
+        nonce: 0,
+        nextNonce: () => {
+          const current = get().nonce;
+          set({ nonce: current + 1 });
+          return current;
+        },
+      };
+    },
     {
       name: 'provable-fairness-storage',
+      partialize: (state) => ({ clientSeed: state.clientSeed }),
     }
   )
 );
 
-// Helper function to generate random string
-function generateRandomString(length: number): string {
-  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let result = '';
-  const charactersLength = characters.length;
-  
-  for (let i = 0; i < length; i++) {
-    result += characters.charAt(Math.floor(Math.random() * charactersLength));
-  }
-  
-  return result;
-}
-
-// Initialize with a server seed if none exists
-export const initializeProvableFairness = () => {
-  const { serverSeeds, rotateServerSeed } = useProvableFairnessStore.getState();
-  
-  if (serverSeeds.length === 0) {
-    rotateServerSeed();
-  }
-};
-
-// Generate a provably fair result for coin flip (0 or 1)
-export const generateCoinFlipResult = (
-  serverSeed: string,
-  clientSeed: string,
-  nonce: number
-): 'heads' | 'tails' => {
-  const combinedSeed = `${serverSeed}-${clientSeed}-${nonce}`;
-  const hash = SHA256(combinedSeed).toString();
-  const hexValue = hash.substring(0, 8);
-  const decimalValue = parseInt(hexValue, 16);
-  
-  return decimalValue % 2 === 0 ? 'heads' : 'tails';
-};
-
-// Generate a provably fair result for dice roll (1-100)
-export const generateDiceRollResult = (
-  serverSeed: string,
-  clientSeed: string,
-  nonce: number
-): number => {
-  const combinedSeed = `${serverSeed}-${clientSeed}-${nonce}`;
-  const hash = SHA256(combinedSeed).toString();
-  const hexValue = hash.substring(0, 8);
-  const decimalValue = parseInt(hexValue, 16);
-  
-  return (decimalValue % 100) + 1;
-};
-
-// Verify a previous result
-export const verifyResult = (
-  gameType: 'coinflip' | 'diceroll',
-  serverSeed: string,
-  clientSeed: string,
-  nonce: number,
-  expectedResult: 'heads' | 'tails' | number
-): boolean => {
-  if (gameType === 'coinflip') {
-    const result = generateCoinFlipResult(serverSeed, clientSeed, nonce);
-    return result === expectedResult;
-  } else if (gameType === 'diceroll') {
-    const result = generateDiceRollResult(serverSeed, clientSeed, nonce);
-    return result === expectedResult;
-  }
-  
-  return false;
-};

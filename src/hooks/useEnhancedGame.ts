@@ -1,14 +1,35 @@
-import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
-import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { toast } from 'react-hot-toast';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import {
+  generateCoinFlipResult,
+  generateDiceRollResult,
+  generateSlotsResult,
+  useProvableFairnessStore,
+  type ProvableFairData,
+  type ProvablyFairGameType,
+} from '../utils/provableFairness';
 
 // Types
+type CoinFlipPrediction = { choice: 'heads' | 'tails' };
+type DiceRollPrediction = { target: number; isOver: boolean };
+type SlotsPrediction = { reels: number };
+
+type GamePrediction = CoinFlipPrediction | DiceRollPrediction | SlotsPrediction;
+type GameOutcome = 'heads' | 'tails' | number | [number, number, number];
+
+interface GameResult {
+  outcome: GameOutcome;
+  won: boolean;
+  payout: number;
+}
+
 interface GameState {
   isPlaying: boolean;
-  result: any | null;
+  result: GameResult | null;
   isAnimating: boolean;
   gameId: string | null;
   transactionSignature: string | null;
@@ -19,23 +40,20 @@ interface GameState {
 
 interface GameHistory {
   id: string;
-  gameType: string;
+  gameType: ProvablyFairGameType;
   betAmount: number;
-  prediction: any;
-  result: any;
+  prediction: GamePrediction;
+  result: GameResult;
   won: boolean;
   payout: number;
   timestamp: number;
   transactionSignature: string;
-  provableFairData: {
-    clientSeed: string;
-    serverSeedHash: string;
-    nonce: number;
-  };
+  provableFairData: ProvableFairData;
 }
 
 interface GameStats {
   totalGames: number;
+  wins: number;
   totalWagered: number;
   totalWon: number;
   biggestWin: number;
@@ -45,160 +63,194 @@ interface GameStats {
   profitLoss: number;
 }
 
-// Store for game state management
-interface GameStore {
+interface GameSlice {
   gameState: GameState;
   gameHistory: GameHistory[];
   gameStats: GameStats;
-  setGameState: (state: Partial<GameState>) => void;
-  addGameToHistory: (game: GameHistory) => void;
-  updateGameStats: (game: GameHistory) => void;
-  clearHistory: () => void;
-  resetStats: () => void;
+}
+
+const EMPTY_GAME_STATE: GameState = {
+  isPlaying: false,
+  result: null,
+  isAnimating: false,
+  gameId: null,
+  transactionSignature: null,
+  error: null,
+  startTime: null,
+  endTime: null,
+};
+
+const EMPTY_GAME_STATS: GameStats = {
+  totalGames: 0,
+  wins: 0,
+  totalWagered: 0,
+  totalWon: 0,
+  biggestWin: 0,
+  currentStreak: 0,
+  bestStreak: 0,
+  winRate: 0,
+  profitLoss: 0,
+};
+
+const EMPTY_GAME_HISTORY: GameHistory[] = [];
+
+const createEmptySlice = (): GameSlice => ({
+  gameState: { ...EMPTY_GAME_STATE },
+  gameHistory: [],
+  gameStats: { ...EMPTY_GAME_STATS },
+});
+
+// Store for per-game state management
+interface GameStore {
+  games: Partial<Record<ProvablyFairGameType, GameSlice>>;
+  setGameState: (gameType: ProvablyFairGameType, state: Partial<GameState>) => void;
+  addGameToHistory: (gameType: ProvablyFairGameType, game: GameHistory) => void;
+  updateGameStats: (gameType: ProvablyFairGameType, game: GameHistory) => void;
+  clearHistory: (gameType: ProvablyFairGameType) => void;
+  resetStats: (gameType: ProvablyFairGameType) => void;
 }
 
 const useGameStore = create<GameStore>()(
   persist(
-    (set, get) => ({
-      gameState: {
-        isPlaying: false,
-        result: null,
-        isAnimating: false,
-        gameId: null,
-        transactionSignature: null,
-        error: null,
-        startTime: null,
-        endTime: null,
-      },
-      gameHistory: [],
-      gameStats: {
-        totalGames: 0,
-        totalWagered: 0,
-        totalWon: 0,
-        biggestWin: 0,
-        currentStreak: 0,
-        bestStreak: 0,
-        winRate: 0,
-        profitLoss: 0,
-      },
-      setGameState: (state) => set((prev) => ({
-        gameState: { ...prev.gameState, ...state }
-      })),
-      addGameToHistory: (game) => set((prev) => ({
-        gameHistory: [game, ...prev.gameHistory.slice(0, 99)] // Keep last 100 games
-      })),
-      updateGameStats: (game) => set((prev) => {
-        const stats = { ...prev.gameStats };
-        stats.totalGames += 1;
-        stats.totalWagered += game.betAmount;
+    (set) => ({
+      games: {},
 
-        if (game.won) {
-          stats.totalWon += game.payout;
-          stats.currentStreak = stats.currentStreak >= 0 ? stats.currentStreak + 1 : 1;
-          stats.biggestWin = Math.max(stats.biggestWin, game.payout);
-        } else {
-          stats.currentStreak = stats.currentStreak <= 0 ? stats.currentStreak - 1 : -1;
-        }
+      setGameState: (gameType, state) =>
+        set((prev) => {
+          const slice = prev.games[gameType] ?? createEmptySlice();
+          return {
+            games: {
+              ...prev.games,
+              [gameType]: { ...slice, gameState: { ...slice.gameState, ...state } },
+            },
+          };
+        }),
 
-        stats.bestStreak = Math.max(stats.bestStreak, Math.abs(stats.currentStreak));
-        stats.winRate = (prev.gameHistory.filter(g => g.won).length + (game.won ? 1 : 0)) / stats.totalGames * 100;
-        stats.profitLoss = stats.totalWon - stats.totalWagered;
+      addGameToHistory: (gameType, game) =>
+        set((prev) => {
+          const slice = prev.games[gameType] ?? createEmptySlice();
+          return {
+            games: {
+              ...prev.games,
+              [gameType]: { ...slice, gameHistory: [game, ...slice.gameHistory.slice(0, 99)] },
+            },
+          };
+        }),
 
-        return { gameStats: stats };
-      }),
-      clearHistory: () => set({ gameHistory: [] }),
-      resetStats: () => set({
-        gameStats: {
-          totalGames: 0,
-          totalWagered: 0,
-          totalWon: 0,
-          biggestWin: 0,
-          currentStreak: 0,
-          bestStreak: 0,
-          winRate: 0,
-          profitLoss: 0,
-        }
-      }),
+      updateGameStats: (gameType, game) =>
+        set((prev) => {
+          const slice = prev.games[gameType] ?? createEmptySlice();
+          const stats: GameStats = { ...slice.gameStats };
+
+          stats.totalGames += 1;
+          stats.totalWagered += game.betAmount;
+
+          if (game.won) {
+            stats.wins += 1;
+            stats.totalWon += game.payout;
+            stats.currentStreak = stats.currentStreak >= 0 ? stats.currentStreak + 1 : 1;
+            stats.biggestWin = Math.max(stats.biggestWin, game.payout);
+          } else {
+            stats.currentStreak = stats.currentStreak <= 0 ? stats.currentStreak - 1 : -1;
+          }
+
+          stats.bestStreak = Math.max(stats.bestStreak, Math.abs(stats.currentStreak));
+          stats.winRate = stats.totalGames > 0 ? (stats.wins / stats.totalGames) * 100 : 0;
+          stats.profitLoss = stats.totalWon - stats.totalWagered;
+
+          return {
+            games: {
+              ...prev.games,
+              [gameType]: { ...slice, gameStats: stats },
+            },
+          };
+        }),
+
+      clearHistory: (gameType) =>
+        set((prev) => {
+          const slice = prev.games[gameType] ?? createEmptySlice();
+          return {
+            games: {
+              ...prev.games,
+              [gameType]: { ...slice, gameHistory: [] },
+            },
+          };
+        }),
+
+      resetStats: (gameType) =>
+        set((prev) => {
+          const slice = prev.games[gameType] ?? createEmptySlice();
+          return {
+            games: {
+              ...prev.games,
+              [gameType]: { ...slice, gameStats: { ...EMPTY_GAME_STATS } },
+            },
+          };
+        }),
     }),
     {
       name: 'game-store',
-      partialize: (state) => ({
-        gameHistory: state.gameHistory,
-        gameStats: state.gameStats,
-      }),
+      partialize: (state) => ({ games: state.games }),
     }
   )
 );
 
 // Enhanced game hook
-export const useEnhancedGame = (gameType: string) => {
+export const useEnhancedGame = (gameType: ProvablyFairGameType) => {
   const { connection } = useConnection();
-  const { publicKey, signTransaction, sendTransaction } = useWallet();
+  const { publicKey } = useWallet();
   const [balance, setBalance] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
 
-  const {
-    gameState,
-    gameHistory,
-    gameStats,
-    setGameState,
-    addGameToHistory,
-    updateGameStats,
-  } = useGameStore();
+  const gameState = useGameStore((state) => state.games[gameType]?.gameState ?? EMPTY_GAME_STATE);
+  const gameHistory = useGameStore((state) => state.games[gameType]?.gameHistory ?? EMPTY_GAME_HISTORY);
+  const gameStats = useGameStore((state) => state.games[gameType]?.gameStats ?? EMPTY_GAME_STATS);
+  const setGameState = useGameStore((state) => state.setGameState);
+  const addGameToHistory = useGameStore((state) => state.addGameToHistory);
+  const updateGameStats = useGameStore((state) => state.updateGameStats);
+
+  const clientSeed = useProvableFairnessStore((state) => state.clientSeed);
+  const serverSeed = useProvableFairnessStore((state) => state.serverSeed);
+  const serverSeedHash = useProvableFairnessStore((state) => state.serverSeedHash);
+  const nextNonce = useProvableFairnessStore((state) => state.nextNonce);
 
   // Audio refs
   const winSoundRef = useRef<HTMLAudioElement | null>(null);
   const loseSoundRef = useRef<HTMLAudioElement | null>(null);
   const spinSoundRef = useRef<HTMLAudioElement | null>(null);
 
-  // WebSocket connection for real-time updates
-  const wsRef = useRef<WebSocket | null>(null);
-
-  // Simplified game simulation (without complex smart contracts for now)
-  const gameSimulator = useMemo(() => {
-    return {
-      simulateGame: (gameType: string, betAmount: number, prediction: any) => {
-        // Simple game simulation logic
-        let outcome: any;
-        let won = false;
-        let payout = 0;
-
-        switch (gameType) {
-          case 'coinflip':
-            outcome = Math.random() < 0.5 ? 'heads' : 'tails';
-            won = outcome === prediction.choice;
-            payout = won ? betAmount * 1.95 : 0;
-            break;
-          case 'diceroll':
-            outcome = Math.floor(Math.random() * 100) + 1;
-            won = prediction.isOver ? outcome > prediction.target : outcome < prediction.target;
-            const chance = prediction.isOver ? (100 - prediction.target) : prediction.target;
-            const multiplier = chance > 0 ? (98 / chance) : 0;
-            payout = won ? betAmount * Math.min(multiplier, 9.9) : 0;
-            break;
-          case 'slots':
-            outcome = [
-              Math.floor(Math.random() * 7),
-              Math.floor(Math.random() * 7),
-              Math.floor(Math.random() * 7)
-            ];
-            // Check for wins (simplified)
-            if (outcome[0] === outcome[1] && outcome[1] === outcome[2]) {
-              won = true;
-              payout = betAmount * (outcome[0] === 6 ? 100 : (outcome[0] + 1) * 5);
-            }
-            break;
-          default:
-            outcome = Math.random() < 0.5;
-            won = outcome === prediction;
-            payout = won ? betAmount * 2 : 0;
+  const simulateGame = useCallback(
+    (betAmount: number, prediction: GamePrediction, fair: ProvableFairData): GameResult => {
+      switch (gameType) {
+        case 'coinflip': {
+          const coinPrediction = prediction as CoinFlipPrediction;
+          const outcome = generateCoinFlipResult(fair.serverSeed, fair.clientSeed, fair.nonce);
+          const won = outcome === coinPrediction.choice;
+          return { outcome, won, payout: won ? betAmount * 1.95 : 0 };
         }
-
-        return { outcome, won, payout };
+        case 'diceroll': {
+          const dicePrediction = prediction as DiceRollPrediction;
+          const outcome = generateDiceRollResult(fair.serverSeed, fair.clientSeed, fair.nonce);
+          const won = dicePrediction.isOver ? outcome > dicePrediction.target : outcome < dicePrediction.target;
+          const chance = dicePrediction.isOver ? 100 - dicePrediction.target : dicePrediction.target;
+          const multiplier = chance > 0 ? 98 / chance : 0;
+          return { outcome, won, payout: won ? betAmount * Math.min(multiplier, 9.9) : 0 };
+        }
+        case 'slots': {
+          const outcome = generateSlotsResult(fair.serverSeed, fair.clientSeed, fair.nonce);
+          const won = outcome[0] === outcome[1] && outcome[1] === outcome[2];
+          const payout = won ? betAmount * (outcome[0] === 6 ? 100 : (outcome[0] + 1) * 5) : 0;
+          return { outcome, won, payout };
+        }
+        default: {
+          const exhaustiveCheck: never = gameType;
+          throw new Error(`Unsupported game type: ${exhaustiveCheck}`);
+        }
       }
-    };
-  }, []);
+    },
+    [gameType]
+  );
 
   // Initialize audio
   useEffect(() => {
@@ -225,8 +277,8 @@ export const useEnhancedGame = (gameType: string) => {
   }, [gameType]);
 
   // Handle game result processing
-  const processGameResult = useCallback((result: any, betAmount: number, prediction: any, gameId: string) => {
-    setGameState({
+  const processGameResult = useCallback((result: GameResult, betAmount: number, prediction: GamePrediction, gameId: string, fair: ProvableFairData) => {
+    setGameState(gameType, {
       result,
       isAnimating: false,
       isPlaying: false,
@@ -261,16 +313,12 @@ export const useEnhancedGame = (gameType: string) => {
       won: result.won,
       payout: result.payout,
       timestamp: Date.now(),
-      transactionSignature: 'simulated-tx',
-      provableFairData: {
-        clientSeed: Math.random().toString(36),
-        serverSeedHash: 'simulated-hash',
-        nonce: Date.now(),
-      },
+      transactionSignature: `simulated-tx-${gameId}`,
+      provableFairData: fair,
     };
 
-    addGameToHistory(gameRecord);
-    updateGameStats(gameRecord);
+    addGameToHistory(gameType, gameRecord);
+    updateGameStats(gameType, gameRecord);
   }, [gameType, soundEnabled, setGameState, addGameToHistory, updateGameStats]);
 
   // Fetch balance
@@ -294,7 +342,7 @@ export const useEnhancedGame = (gameType: string) => {
   // Simplified bet placement with game simulation
   const placeBet = useCallback(async (
     amount: number,
-    prediction: any,
+    prediction: GamePrediction,
     options: {
       clientSeed?: string;
       autoPlay?: boolean;
@@ -320,9 +368,9 @@ export const useEnhancedGame = (gameType: string) => {
     }
 
     setIsLoading(true);
-    const gameId = Math.random().toString(36).substring(7);
+    const gameId = globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2);
 
-    setGameState({
+    setGameState(gameType, {
       isPlaying: true,
       isAnimating: true,
       result: null,
@@ -344,11 +392,17 @@ export const useEnhancedGame = (gameType: string) => {
 
       await new Promise(resolve => setTimeout(resolve, delay));
 
-      // Simulate the game
-      const result = gameSimulator.simulateGame(gameType, amount, prediction);
+      const fair: ProvableFairData = {
+        clientSeed: options.clientSeed ?? clientSeed,
+        serverSeed,
+        serverSeedHash,
+        nonce: nextNonce(),
+      };
+
+      const result = simulateGame(amount, prediction, fair);
 
       // Process the result
-      processGameResult(result, amount, prediction, gameId);
+      processGameResult(result, amount, prediction, gameId, fair);
 
       // Update balance (simulate)
       if (balance !== null) {
@@ -357,30 +411,31 @@ export const useEnhancedGame = (gameType: string) => {
       }
 
       return {
-        signature: 'simulated-tx-' + gameId,
+        signature: `simulated-tx-${gameId}`,
         gameId,
       };
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error placing bet:', error);
+      const message = error instanceof Error ? error.message : 'Failed to place bet';
 
-      setGameState({
+      setGameState(gameType, {
         isPlaying: false,
         isAnimating: false,
-        error: error.message || 'Failed to place bet',
+        error: message,
       });
 
-      toast.error(error.message || 'Failed to place bet');
+      toast.error(message);
       throw error;
     } finally {
       setIsLoading(false);
     }
-  }, [publicKey, gameState.isPlaying, balance, gameType, soundEnabled, setGameState, gameSimulator, processGameResult]);
+  }, [publicKey, gameState.isPlaying, balance, gameType, soundEnabled, setGameState, clientSeed, serverSeed, serverSeedHash, nextNonce, simulateGame, processGameResult]);
 
   // Auto-play functionality (simplified)
   const startAutoPlay = useCallback(async (
     baseAmount: number,
-    prediction: any,
+    prediction: GamePrediction,
     options: {
       numberOfGames: number;
       stopOnWin?: number;
@@ -390,29 +445,38 @@ export const useEnhancedGame = (gameType: string) => {
     }
   ) => {
     // Simplified auto-play - would be implemented in production
+    void baseAmount;
+    void prediction;
+    void options;
     console.log('Auto-play feature coming soon!');
-    toast.info('Auto-play feature coming soon!');
+    toast('Auto-play feature coming soon!');
   }, []);
 
   // Initialize balance on mount and set default balance for demo
   useEffect(() => {
-    if (publicKey) {
-      fetchBalance();
-      // Set demo balance if no real balance
-      if (balance === null) {
-        setBalance(10); // Demo balance of 10 SOL
-      }
-    } else {
+    if (!publicKey) {
       setBalance(null);
+      return;
     }
 
-    // Refresh balance every 30 seconds
+    let isCanceled = false;
+
+    const load = async () => {
+      const realBalance = await fetchBalance();
+      if (!isCanceled && realBalance === null) setBalance(10);
+    };
+
+    load().catch(console.error);
+
     const intervalId = setInterval(() => {
-      if (publicKey) fetchBalance();
+      fetchBalance().catch(console.error);
     }, 30000);
 
-    return () => clearInterval(intervalId);
-  }, [fetchBalance, publicKey, balance]);
+    return () => {
+      isCanceled = true;
+      clearInterval(intervalId);
+    };
+  }, [fetchBalance, publicKey]);
 
   return {
     // State

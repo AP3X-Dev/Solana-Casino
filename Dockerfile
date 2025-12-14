@@ -5,13 +5,18 @@ FROM node:18-alpine AS frontend-builder
 
 WORKDIR /app
 
+# Disable Husky in container builds
+ENV HUSKY=0
+
 # Copy package files
 COPY package*.json ./
 COPY tsconfig*.json ./
 COPY vite.config.ts ./
+COPY tailwind.config.js ./
+COPY postcss.config.js ./
 
 # Install dependencies
-RUN npm ci --only=production && npm cache clean --force
+RUN npm ci && npm cache clean --force
 
 # Copy source code
 COPY src/ ./src/
@@ -26,18 +31,24 @@ FROM node:18-alpine AS backend-builder
 
 WORKDIR /app
 
+# Disable Husky in container builds
+ENV HUSKY=0
+
 # Copy backend package files
 COPY server/package*.json ./
 COPY server/tsconfig.json ./
 
 # Install dependencies
-RUN npm ci --only=production && npm cache clean --force
+RUN npm ci && npm cache clean --force
 
 # Copy backend source
 COPY server/src/ ./src/
 
 # Build backend
 RUN npm run build
+
+# Remove devDependencies for production runtime
+RUN npm prune --omit=dev
 
 # Stage 3: Production image
 FROM node:18-alpine AS production

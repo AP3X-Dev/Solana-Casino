@@ -1,4 +1,4 @@
-import React from 'react';
+import type { ReactNode } from 'react';
 import { Shield, Zap, MessageSquare, Coins, Code, Award, Users } from 'lucide-react';
 
 const About = () => {
@@ -139,7 +139,13 @@ const About = () => {
 };
 
 // Feature Card Component
-const FeatureCard = ({ icon, title, description }) => (
+interface FeatureCardProps {
+  icon: ReactNode;
+  title: string;
+  description: string;
+}
+
+const FeatureCard = ({ icon, title, description }: FeatureCardProps) => (
   <div className="bg-[var(--card)] rounded-xl p-6 border border-[var(--border)] hover:border-[var(--accent)] hover:border-opacity-50 transition-colors">
     <div className="text-[var(--accent)] mb-4">
       {icon}
@@ -150,7 +156,15 @@ const FeatureCard = ({ icon, title, description }) => (
 );
 
 // Update Card Component
-const UpdateCard = ({ version, date, title, description, features }) => (
+interface UpdateCardProps {
+  version: string;
+  date: string;
+  title: string;
+  description: string;
+  features: string[];
+}
+
+const UpdateCard = ({ version, date, title, description, features }: UpdateCardProps) => (
   <div className="bg-[var(--card)] rounded-xl p-6 border border-[var(--border)]">
     <div className="flex flex-wrap items-center justify-between mb-4">
       <h3 className="text-xl font-bold text-white">{title}</h3>
@@ -172,7 +186,5 @@ const UpdateCard = ({ version, date, title, description, features }) => (
     </ul>
   </div>
 );
-
-
 
 export default About;

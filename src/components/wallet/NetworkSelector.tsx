@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { NETWORKS, useWalletSettings } from '../WalletProvider';
+import { NETWORKS, useWalletSettings, type NetworkKey } from './walletConfig';
 import { ChevronDown, Check, Wifi, WifiOff } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
@@ -9,13 +9,13 @@ const NetworkSelector: React.FC = () => {
   const { connected } = useWallet();
   const [isOpen, setIsOpen] = useState(false);
 
-  const activeNetworks = Object.entries(NETWORKS)
-    .filter(([_, config]) => config.active)
-    .map(([key, config]) => ({ key, ...config }));
+  const activeNetworks = (Object.keys(NETWORKS) as NetworkKey[])
+    .filter((key) => NETWORKS[key].active)
+    .map((key) => ({ key, ...NETWORKS[key] }));
 
-  const currentNetwork = NETWORKS[network as keyof typeof NETWORKS];
+  const currentNetwork = NETWORKS[network];
 
-  const handleNetworkChange = (networkKey: string) => {
+  const handleNetworkChange = (networkKey: NetworkKey) => {
     setNetwork(networkKey);
     setIsOpen(false);
   };

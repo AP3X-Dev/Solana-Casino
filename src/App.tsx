@@ -10,7 +10,7 @@ const App: React.FC = () => {
   return (
     <WalletProvider>
       <BrowserRouter>
-        <div className="min-h-screen bg-[var(--background)]">
+        <div className="min-h-screen">
           <EnhancedNavigation />
           <main>
             <AppRoutes />

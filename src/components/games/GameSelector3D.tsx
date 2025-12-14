@@ -17,12 +17,30 @@ interface GameCard {
   maxPayout: string;
   players: number;
   gradient: string;
-  bgImage: string;
   features: string[];
   isNew?: boolean;
   isHot?: boolean;
   comingSoon?: boolean;
 }
+
+const GAME_BACKGROUNDS: Record<string, string> = {
+  coinflip:
+    'radial-gradient(circle at 20% 15%, var(--gold-glow), transparent 55%), radial-gradient(circle at 85% 0%, var(--accent-soft), transparent 50%), radial-gradient(circle at 85% 90%, var(--secondary-soft), transparent 55%)',
+  dice:
+    'radial-gradient(circle at 25% 15%, var(--accent-soft), transparent 55%), radial-gradient(circle at 75% 85%, var(--info-soft), transparent 55%), radial-gradient(circle at 80% 10%, var(--secondary-soft), transparent 45%)',
+  slots:
+    'radial-gradient(circle at 20% 20%, var(--success-soft), transparent 55%), radial-gradient(circle at 80% 80%, var(--gold-glow), transparent 55%), radial-gradient(circle at 70% 10%, var(--accent-soft), transparent 45%)',
+  blackjack:
+    'radial-gradient(circle at 25% 20%, var(--card-glass), transparent 55%), radial-gradient(circle at 80% 75%, var(--secondary-soft), transparent 55%), radial-gradient(circle at 70% 10%, var(--accent-soft), transparent 45%)',
+  roulette:
+    'radial-gradient(circle at 25% 20%, var(--error-soft), transparent 55%), radial-gradient(circle at 85% 80%, var(--secondary-soft), transparent 55%), radial-gradient(circle at 70% 10%, var(--gold-glow), transparent 45%)',
+  poker:
+    'radial-gradient(circle at 25% 20%, var(--accent-soft), transparent 55%), radial-gradient(circle at 85% 80%, var(--secondary-soft), transparent 55%), radial-gradient(circle at 55% 55%, var(--card-glass), transparent 60%)',
+};
+
+const getGameBackground = (id: string) =>
+  GAME_BACKGROUNDS[id] ??
+  'radial-gradient(circle at 20% 20%, var(--accent-soft), transparent 55%), radial-gradient(circle at 80% 80%, var(--secondary-soft), transparent 55%)';
 
 const GAME_CARDS: GameCard[] = [
   {
@@ -36,7 +54,6 @@ const GAME_CARDS: GameCard[] = [
     maxPayout: '1.95x',
     players: 1247,
     gradient: 'from-yellow-500 via-orange-500 to-red-500',
-    bgImage: '/images/coinflip-bg.jpg',
     features: ['Provably Fair', '3D Physics', 'Instant Results'],
     isHot: true,
   },
@@ -51,7 +68,6 @@ const GAME_CARDS: GameCard[] = [
     maxPayout: '9.8x',
     players: 892,
     gradient: 'from-red-500 via-pink-500 to-purple-500',
-    bgImage: '/images/dice-bg.jpg',
     features: ['Variable Odds', 'High Multipliers', 'Risk Control'],
   },
   {
@@ -65,7 +81,6 @@ const GAME_CARDS: GameCard[] = [
     maxPayout: '25x',
     players: 2156,
     gradient: 'from-green-500 via-emerald-500 to-teal-500',
-    bgImage: '/images/slots-bg.jpg',
     features: ['Progressive Jackpot', 'Bonus Rounds', 'Free Spins'],
     isNew: true,
   },
@@ -80,7 +95,6 @@ const GAME_CARDS: GameCard[] = [
     maxPayout: '2.5x',
     players: 634,
     gradient: 'from-gray-700 via-gray-800 to-black',
-    bgImage: '/images/blackjack-bg.jpg',
     features: ['Strategy Hints', 'Card Counting', 'Side Bets'],
     comingSoon: true,
   },
@@ -95,7 +109,6 @@ const GAME_CARDS: GameCard[] = [
     maxPayout: '35x',
     players: 445,
     gradient: 'from-red-600 via-red-700 to-red-900',
-    bgImage: '/images/roulette-bg.jpg',
     features: ['European Rules', 'Advanced Bets', 'Hot Numbers'],
     comingSoon: true,
   },
@@ -110,7 +123,6 @@ const GAME_CARDS: GameCard[] = [
     maxPayout: '1000x',
     players: 1823,
     gradient: 'from-purple-600 via-purple-700 to-indigo-800',
-    bgImage: '/images/poker-bg.jpg',
     features: ['AI Opponents', 'Tournaments', 'Bluff Detection'],
     comingSoon: true,
   },
@@ -230,10 +242,9 @@ const GameSelector3D: React.FC = () => {
                 <div className="relative h-[500px] rounded-3xl overflow-hidden transform-gpu preserve-3d">
                   {/* Background Image */}
                   <div
-                    className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
+                    className="absolute inset-0 transition-transform duration-700 group-hover:scale-110"
                     style={{
-                      backgroundImage: `url(${game.bgImage})`,
-                      filter: 'brightness(0.3)'
+                      backgroundImage: getGameBackground(game.id),
                     }}
                   />
 

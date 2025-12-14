@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import {
   Home, Gamepad2, BarChart3, Trophy, Settings, Menu, X,
   Coins, Dice1, Zap, Crown,
-  User, LogOut, Bell, Search
+  User, LogOut, Bell, Search, Medal, Info, Wallet, ChevronDown, Moon, Sun, Sparkles
 } from 'lucide-react';
+import { useTheme } from '../../hooks/useTheme';
 
 interface NavItem {
   path: string;
@@ -69,12 +70,56 @@ const NAV_ITEMS: NavItem[] = [
   },
 ];
 
+interface UtilityItem {
+  path: string;
+  label: string;
+  description: string;
+  icon: React.ComponentType<{ className?: string }>;
+}
+
+const UTILITY_ITEMS: UtilityItem[] = [
+  {
+    path: '/leaderboard',
+    label: 'Leaderboard',
+    description: 'Top players & ranks',
+    icon: Medal,
+  },
+  {
+    path: '/create',
+    label: 'Create Casino',
+    description: 'Token setup wizard',
+    icon: Sparkles,
+  },
+  {
+    path: '/wallets',
+    label: 'Wallets',
+    description: 'Address & balances',
+    icon: Wallet,
+  },
+  {
+    path: '/settings',
+    label: 'Settings',
+    description: 'Theme & network',
+    icon: Settings,
+  },
+  {
+    path: '/about',
+    label: 'About',
+    description: 'Platform info',
+    icon: Info,
+  },
+];
+
 const EnhancedNavigation: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [activeHover, setActiveHover] = useState<string | null>(null);
+  const [isMoreOpen, setIsMoreOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const { connected, publicKey, disconnect } = useWallet();
+  const { theme, toggleTheme } = useTheme();
+  const moreRef = useRef<HTMLDivElement>(null);
 
   // Handle scroll effect
   useEffect(() => {
@@ -89,7 +134,27 @@ const EnhancedNavigation: React.FC = () => {
   // Close mobile menu on route change
   useEffect(() => {
     setIsOpen(false);
+    setIsMoreOpen(false);
   }, [location.pathname]);
+
+  useEffect(() => {
+    if (!isMoreOpen) return;
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!moreRef.current) return;
+      if (event.target instanceof Node && !moreRef.current.contains(event.target)) {
+        setIsMoreOpen(false);
+      }
+    };
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsMoreOpen(false);
+    };
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isMoreOpen]);
 
   const isActive = (path: string) => {
     if (path === '/') return location.pathname === '/';
@@ -104,30 +169,30 @@ const EnhancedNavigation: React.FC = () => {
         animate={{ y: 0 }}
         className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${
           isScrolled
-            ? 'bg-[var(--card)]/95 backdrop-blur-xl border-b border-[var(--border)]'
+            ? 'bg-[var(--card)] backdrop-blur-xl border-b border-[var(--border)]'
             : 'bg-transparent'
         }`}
       >
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
             {/* Logo */}
-            <Link to="/" className="flex items-center space-x-3 group">
+            <Link to="/" className="flex items-center space-x-2 md:space-x-3 group min-w-0">
               <motion.div
                 whileHover={{ rotate: 360, scale: 1.1 }}
                 transition={{ duration: 0.5 }}
-                className="relative"
+                className="relative flex-shrink-0"
               >
-                <div className="w-12 h-12 bg-gradient-to-br from-[var(--accent)] to-[var(--secondary)] rounded-xl flex items-center justify-center shadow-lg">
-                  <Crown className="w-7 h-7 text-white" />
+                <div className="w-10 md:w-12 h-10 md:h-12 bg-gradient-to-br from-[var(--accent)] to-[var(--secondary)] rounded-xl flex items-center justify-center shadow-lg">
+                  <Crown className="w-5 md:w-7 h-5 md:h-7 text-white" />
                 </div>
                 <motion.div
                   className="absolute inset-0 bg-gradient-to-br from-[var(--accent)] to-[var(--secondary)] rounded-xl opacity-0 group-hover:opacity-30 blur-lg"
                   whileHover={{ scale: 1.2 }}
                 />
               </motion.div>
-              <div>
-                <div className="text-xl font-black gradient-text">SOLANA CASINO</div>
-                <div className="text-xs text-[var(--text-secondary)]">Ultra Gaming Platform</div>
+              <div className="min-w-0">
+                <div className="text-lg md:text-xl font-black gradient-text truncate">SOLANA CASINO</div>
+                <div className="text-xs text-[var(--text-secondary)] truncate">Ultra Gaming Platform</div>
               </div>
             </Link>
 
@@ -198,6 +263,7 @@ const EnhancedNavigation: React.FC = () => {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
+                onClick={() => navigate('/games')}
                 className="hidden md:flex p-3 rounded-xl bg-[var(--card-hover)] hover:bg-[var(--accent)] transition-all duration-300"
               >
                 <Search className="w-5 h-5" />
@@ -212,6 +278,63 @@ const EnhancedNavigation: React.FC = () => {
                 <Bell className="w-5 h-5" />
                 <div className="absolute -top-1 -right-1 w-3 h-3 bg-[var(--error)] rounded-full animate-pulse"></div>
               </motion.button>
+
+              {/* Theme Toggle */}
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={toggleTheme}
+                className="hidden md:flex p-3 rounded-xl bg-[var(--card-hover)] hover:bg-[var(--accent)] transition-all duration-300"
+                aria-label="Toggle theme"
+              >
+                {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              </motion.button>
+
+              {/* More Menu */}
+              <div ref={moreRef} className="hidden lg:block relative">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setIsMoreOpen((prev) => !prev)}
+                  className="flex items-center gap-2 px-4 py-3 rounded-xl bg-[var(--card-hover)] hover:bg-[var(--accent)] transition-all duration-300"
+                  aria-haspopup="menu"
+                  aria-expanded={isMoreOpen}
+                >
+                  <Settings className="w-5 h-5" />
+                  <ChevronDown className="w-4 h-4 opacity-80" />
+                </motion.button>
+
+                <AnimatePresence>
+                  {isMoreOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.98 }}
+                      className="absolute right-0 mt-3 w-72 bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-2xl overflow-hidden z-50"
+                      role="menu"
+                    >
+                      <div className="p-2">
+                        {UTILITY_ITEMS.map((item) => (
+                          <Link
+                            key={item.path}
+                            to={item.path}
+                            className="flex items-center gap-3 p-3 rounded-xl hover:bg-[var(--card-hover)] transition-colors"
+                            role="menuitem"
+                          >
+                            <div className="h-10 w-10 rounded-xl bg-[var(--card-hover)] border border-[var(--border)] flex items-center justify-center">
+                              <item.icon className="w-5 h-5" />
+                            </div>
+                            <div className="min-w-0">
+                              <div className="font-semibold text-[var(--text-primary)] truncate">{item.label}</div>
+                              <div className="text-sm text-[var(--text-secondary)] truncate">{item.description}</div>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
 
               {/* Wallet Connection */}
               <div className="relative">
@@ -243,7 +366,7 @@ const EnhancedNavigation: React.FC = () => {
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       onClick={disconnect}
-                      className="p-3 rounded-xl bg-[var(--error)]/20 hover:bg-[var(--error)] text-[var(--error)] hover:text-white transition-all duration-300"
+                      className="p-3 rounded-xl bg-[var(--error-soft)] hover:bg-[var(--error)] text-[var(--error)] hover:text-white transition-all duration-300"
                     >
                       <LogOut className="w-5 h-5" />
                     </motion.button>
@@ -254,7 +377,7 @@ const EnhancedNavigation: React.FC = () => {
                     animate={{ opacity: 1, scale: 1 }}
                     className="wallet-adapter-button-trigger"
                   >
-                    <WalletMultiButton className="!bg-gradient-to-r !from-[var(--accent)] !to-[var(--secondary)] !rounded-xl !font-bold !px-6 !py-3 !transition-all !duration-300 hover:!scale-105" />
+                    <WalletMultiButton className="!bg-gradient-to-r !from-[var(--accent)] !via-cyan-500 !to-[var(--secondary)] !rounded-xl !font-bold !px-6 !md:px-8 !py-3 !transition-all !duration-300 !shadow-lg hover:!shadow-xl hover:!scale-105 !text-white !border-0" />
                   </motion.div>
                 )}
               </div>
@@ -378,23 +501,65 @@ const EnhancedNavigation: React.FC = () => {
 
                 {/* Mobile Actions */}
                 <div className="mt-8 pt-8 border-t border-[var(--border)] space-y-4">
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="w-full flex items-center space-x-3 p-4 rounded-xl bg-[var(--card-hover)] hover:bg-[var(--accent)] transition-all"
-                  >
-                    <Search className="w-5 h-5" />
-                    <span>Search Games</span>
-                  </motion.button>
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <Link
+                      to="/games"
+                      className="w-full flex items-center space-x-3 p-4 rounded-xl bg-[var(--card-hover)] hover:bg-[var(--accent)] transition-all"
+                    >
+                      <Search className="w-5 h-5" />
+                      <span>Search Games</span>
+                    </Link>
+                  </motion.div>
 
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="w-full flex items-center space-x-3 p-4 rounded-xl bg-[var(--card-hover)] hover:bg-[var(--accent)] transition-all"
-                  >
-                    <Settings className="w-5 h-5" />
-                    <span>Settings</span>
-                  </motion.button>
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <Link
+                      to="/create"
+                      className="w-full flex items-center space-x-3 p-4 rounded-xl bg-[var(--card-hover)] hover:bg-[var(--accent)] transition-all"
+                    >
+                      <Sparkles className="w-5 h-5" />
+                      <span>Create Casino</span>
+                    </Link>
+                  </motion.div>
+
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <Link
+                      to="/leaderboard"
+                      className="w-full flex items-center space-x-3 p-4 rounded-xl bg-[var(--card-hover)] hover:bg-[var(--accent)] transition-all"
+                    >
+                      <Medal className="w-5 h-5" />
+                      <span>Leaderboard</span>
+                    </Link>
+                  </motion.div>
+
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <Link
+                      to="/settings"
+                      className="w-full flex items-center space-x-3 p-4 rounded-xl bg-[var(--card-hover)] hover:bg-[var(--accent)] transition-all"
+                    >
+                      <Settings className="w-5 h-5" />
+                      <span>Settings</span>
+                    </Link>
+                  </motion.div>
+
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <Link
+                      to="/wallets"
+                      className="w-full flex items-center space-x-3 p-4 rounded-xl bg-[var(--card-hover)] hover:bg-[var(--accent)] transition-all"
+                    >
+                      <Wallet className="w-5 h-5" />
+                      <span>Wallets</span>
+                    </Link>
+                  </motion.div>
+
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <Link
+                      to="/about"
+                      className="w-full flex items-center space-x-3 p-4 rounded-xl bg-[var(--card-hover)] hover:bg-[var(--accent)] transition-all"
+                    >
+                      <Info className="w-5 h-5" />
+                      <span>About</span>
+                    </Link>
+                  </motion.div>
                 </div>
               </div>
             </motion.div>

@@ -5,13 +5,18 @@ import RouteLoader from './components/ui/RouteLoader';
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const CasinoCreator = lazy(() => import('./pages/CasinoCreator'));
 const About = lazy(() => import('./pages/About'));
+const TelegramBot = lazy(() => import('./pages/TelegramBot'));
+const Wallets = lazy(() => import('./pages/Wallets'));
+const Settings = lazy(() => import('./pages/Settings'));
+const Tournaments = lazy(() => import('./pages/Tournaments'));
 const UltraCoinFlip = lazy(() => import('./components/games/UltraCoinFlip'));
 const UltraDiceRoll = lazy(() => import('./components/games/UltraDiceRoll'));
 const UltraSlots = lazy(() => import('./components/games/UltraSlots'));
 const GameSelector3D = lazy(() => import('./components/games/GameSelector3D'));
-const AdvancedLeaderboard = lazy(() => import('./components/leaderboard/AdvancedLeaderboard'));
-const EnhancedGameStats = lazy(() => import('./components/analytics/EnhancedGameStats'));
+const Leaderboard = lazy(() => import('./pages/Leaderboard'));
+const Analytics = lazy(() => import('./pages/Analytics'));
 const StyleTest = lazy(() => import('./components/test/StyleTest'));
+const ComponentShowcase = lazy(() => import('./pages/ComponentShowcase'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 const AppRoutes: React.FC = () => {
@@ -21,10 +26,11 @@ const AppRoutes: React.FC = () => {
         <Route path="/" element={<Dashboard />} />
         <Route path="/games" element={<GameSelector3D />} />
         <Route path="/create" element={<CasinoCreator />} />
-        <Route path="/bot" element={<div>Telegram Bot</div>} />
-        <Route path="/wallets" element={<div>Wallets</div>} />
-        <Route path="/settings" element={<div>Settings</div>} />
+        <Route path="/bot" element={<TelegramBot />} />
+        <Route path="/wallets" element={<Wallets />} />
+        <Route path="/settings" element={<Settings />} />
         <Route path="/about" element={<About />} />
+        <Route path="/tournaments" element={<Tournaments />} />
 
         {/* Ultra Games */}
         <Route path="/coinflip" element={<UltraCoinFlip />} />
@@ -32,11 +38,14 @@ const AppRoutes: React.FC = () => {
         <Route path="/slots" element={<UltraSlots />} />
 
         {/* Analytics & Leaderboard */}
-        <Route path="/analytics" element={<EnhancedGameStats />} />
-        <Route path="/leaderboard" element={<AdvancedLeaderboard />} />
+        <Route path="/analytics" element={<Analytics />} />
+        <Route path="/leaderboard" element={<Leaderboard />} />
 
         {import.meta.env.DEV && (
-          <Route path="/style-test" element={<StyleTest />} />
+          <>
+            <Route path="/style-test" element={<StyleTest />} />
+            <Route path="/components" element={<ComponentShowcase />} />
+          </>
         )}
 
         <Route path="*" element={<NotFound />} />

@@ -19,7 +19,7 @@ const Sidebar: React.FC = () => {
     <div className="w-64 h-screen bg-[var(--sidebar)] border-r border-[var(--border)] fixed left-0 top-0">
       <div className="p-4">
         <Link to="/" className="flex items-center space-x-3 px-2 py-4">
-          <div className="w-10 h-10 rounded-xl bg-[var(--accent)]/20 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-[var(--accent-soft)] flex items-center justify-center">
             <Dices className="w-6 h-6 text-[var(--accent)]" />
           </div>
           <span className="text-lg font-bold">SolanaCasino</span>

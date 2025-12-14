@@ -413,8 +413,8 @@ const AdvancedLeaderboard: React.FC<LeaderboardProps> = ({
                       <td className="px-6 py-4 text-center">
                         <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                           entry.isOnline 
-                            ? 'bg-[var(--success)]/20 text-[var(--success)]' 
-                            : 'bg-[var(--text-secondary)]/20 text-[var(--text-secondary)]'
+                            ? 'bg-[var(--success-soft)] text-[var(--success)]' 
+                            : 'bg-[var(--muted-soft)] text-[var(--text-secondary)]'
                         }`}>
                           {entry.isOnline ? 'Online' : 'Offline'}
                         </div>

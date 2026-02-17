@@ -4,23 +4,23 @@ import {
   Coins, Gamepad2, Trophy, Zap, Star, Heart,
   Settings, Bell, Search, Sparkles, Crown, Gem, Users
 } from 'lucide-react';
-import Button from '../ui/Button';
-import Card, { CardContent, CardHeader, CardTitle } from '../ui/Card';
-import Input from '../ui/Input';
-import Textarea from '../ui/Textarea';
-import Checkbox from '../ui/Checkbox';
-import Badge from '../ui/Badge';
-import ProgressBar from '../ui/ProgressBar';
-import Tooltip from '../ui/Tooltip';
-import Dialog from '../ui/Dialog';
-import Switch from '../ui/Switch';
-import Select from '../ui/Select';
-import Tabs from '../ui/Tabs';
-import Alert from '../ui/Alert';
-import Metric from '../ui/Metric';
-import Divider from '../ui/Divider';
-import PageHeader from '../ui/PageHeader';
-import StatCard from '../ui/StatCard';
+import Button from '../components/ui/Button';
+import Card, { CardContent, CardHeader, CardTitle } from '../components/ui/Card';
+import Input from '../components/ui/Input';
+import Textarea from '../components/ui/Textarea';
+import Checkbox from '../components/ui/Checkbox';
+import Badge from '../components/ui/Badge';
+import ProgressBar from '../components/ui/ProgressBar';
+import Tooltip from '../components/ui/Tooltip';
+import Dialog from '../components/ui/Dialog';
+import Switch from '../components/ui/Switch';
+import Select from '../components/ui/Select';
+import Tabs from '../components/ui/Tabs';
+import Alert from '../components/ui/Alert';
+import Metric from '../components/ui/Metric';
+import Divider from '../components/ui/Divider';
+import PageHeader from '../components/ui/PageHeader';
+import StatCard from '../components/ui/StatCard';
 
 const ComponentShowcase: React.FC = () => {
   const [dialogOpen, setDialogOpen] = useState(false);

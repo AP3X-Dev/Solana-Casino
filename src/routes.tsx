@@ -15,7 +15,6 @@ const UltraSlots = lazy(() => import('./components/games/UltraSlots'));
 const GameSelector3D = lazy(() => import('./components/games/GameSelector3D'));
 const Leaderboard = lazy(() => import('./pages/Leaderboard'));
 const Analytics = lazy(() => import('./pages/Analytics'));
-const StyleTest = lazy(() => import('./components/test/StyleTest'));
 const ComponentShowcase = lazy(() => import('./pages/ComponentShowcase'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
@@ -42,10 +41,7 @@ const AppRoutes: React.FC = () => {
         <Route path="/leaderboard" element={<Leaderboard />} />
 
         {import.meta.env.DEV && (
-          <>
-            <Route path="/style-test" element={<StyleTest />} />
-            <Route path="/components" element={<ComponentShowcase />} />
-          </>
+          <Route path="/components" element={<ComponentShowcase />} />
         )}
 
         <Route path="*" element={<NotFound />} />

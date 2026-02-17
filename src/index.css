@@ -266,6 +266,10 @@ body {
   .animate-confetti {
     animation: confetti 3s ease-out;
   }
+
+  .animate-pulse-slow {
+    animation: pulse-slow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
 }
 
 /* Keyframe Animations */
@@ -518,7 +522,17 @@ body {
   }
 }
 
-/* Light theme variables - will be implemented later */
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes progress-stripe {
+  0% { background-position: 1rem 0; }
+  100% { background-position: 0 0; }
+}
+
+/* Light theme variables */
 .light-theme {
   --background: #f6f7fb;
   --background-gradient: linear-gradient(135deg, #f6f7fb 0%, #eef2ff 45%, #fdf2f8 100%);
@@ -693,36 +707,6 @@ body {
 
   .text-gradient-purple {
     @apply bg-gradient-to-r from-white to-purple-400 bg-clip-text text-transparent;
-  }
-
-  /* Animations */
-  .animate-float {
-    animation: float 3s ease-in-out infinite;
-  }
-
-  @keyframes float {
-    0% {
-      transform: translateY(0px);
-    }
-    50% {
-      transform: translateY(-10px);
-    }
-    100% {
-      transform: translateY(0px);
-    }
-  }
-
-  .animate-pulse-slow {
-    animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  }
-
-  @keyframes pulse {
-    0%, 100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.5;
-    }
   }
 
   /* Responsive utilities */

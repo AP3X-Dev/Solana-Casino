@@ -499,67 +499,37 @@ const EnhancedNavigation: React.FC = () => {
                   ))}
                 </div>
 
-                {/* Mobile Actions */}
-                <div className="mt-8 pt-8 border-t border-[var(--border)] space-y-4">
-                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                    <Link
-                      to="/games"
-                      className="w-full flex items-center space-x-3 p-4 rounded-xl bg-[var(--card-hover)] hover:bg-[var(--accent)] transition-all"
+                {/* Utility Items */}
+                <div className="mt-8 pt-8 border-t border-[var(--border)] space-y-2">
+                  {UTILITY_ITEMS.map((item, index) => (
+                    <motion.div
+                      key={item.path}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: (NAV_ITEMS.length + index) * 0.1 }}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
                     >
-                      <Search className="w-5 h-5" />
-                      <span>Search Games</span>
-                    </Link>
-                  </motion.div>
-
-                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                    <Link
-                      to="/create"
-                      className="w-full flex items-center space-x-3 p-4 rounded-xl bg-[var(--card-hover)] hover:bg-[var(--accent)] transition-all"
-                    >
-                      <Sparkles className="w-5 h-5" />
-                      <span>Create Casino</span>
-                    </Link>
-                  </motion.div>
-
-                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                    <Link
-                      to="/leaderboard"
-                      className="w-full flex items-center space-x-3 p-4 rounded-xl bg-[var(--card-hover)] hover:bg-[var(--accent)] transition-all"
-                    >
-                      <Medal className="w-5 h-5" />
-                      <span>Leaderboard</span>
-                    </Link>
-                  </motion.div>
-
-                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                    <Link
-                      to="/settings"
-                      className="w-full flex items-center space-x-3 p-4 rounded-xl bg-[var(--card-hover)] hover:bg-[var(--accent)] transition-all"
-                    >
-                      <Settings className="w-5 h-5" />
-                      <span>Settings</span>
-                    </Link>
-                  </motion.div>
-
-                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                    <Link
-                      to="/wallets"
-                      className="w-full flex items-center space-x-3 p-4 rounded-xl bg-[var(--card-hover)] hover:bg-[var(--accent)] transition-all"
-                    >
-                      <Wallet className="w-5 h-5" />
-                      <span>Wallets</span>
-                    </Link>
-                  </motion.div>
-
-                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                    <Link
-                      to="/about"
-                      className="w-full flex items-center space-x-3 p-4 rounded-xl bg-[var(--card-hover)] hover:bg-[var(--accent)] transition-all"
-                    >
-                      <Info className="w-5 h-5" />
-                      <span>About</span>
-                    </Link>
-                  </motion.div>
+                      <Link
+                        to={item.path}
+                        className={`w-full flex items-center space-x-3 p-4 rounded-xl transition-all ${
+                          isActive(item.path)
+                            ? 'bg-[var(--accent)] text-white shadow-lg'
+                            : 'bg-[var(--card-hover)] hover:bg-[var(--accent)]'
+                        }`}
+                      >
+                        <item.icon className="w-5 h-5" />
+                        <div>
+                          <div className="font-medium">{item.label}</div>
+                          <div className={`text-sm ${
+                            isActive(item.path) ? 'text-white/70' : 'text-[var(--text-secondary)]'
+                          }`}>
+                            {item.description}
+                          </div>
+                        </div>
+                      </Link>
+                    </motion.div>
+                  ))}
                 </div>
               </div>
             </motion.div>

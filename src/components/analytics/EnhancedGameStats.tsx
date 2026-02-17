@@ -7,6 +7,7 @@ import {
   DollarSign, BarChart3, PieChart, Activity,
   Download, Share, RefreshCw
 } from 'lucide-react';
+import PageHeader from '../ui/PageHeader';
 
 interface GameStatsData {
   totalGames: number;
@@ -193,7 +194,7 @@ const EnhancedGameStats: React.FC = () => {
     return (
       <motion.div
         whileHover={{ scale: 1.02, y: -2 }}
-        className="glass-effect rounded-2xl p-6 relative overflow-hidden"
+        className="glass-effect rounded-2xl p-6 relative overflow-hidden border border-[var(--border)] group hover:shadow-[0_0_30px_var(--accent-glow)] transition-shadow"
       >
         <div className="flex items-center justify-between mb-4">
           <div className={`p-3 rounded-xl bg-gradient-to-br ${color}`}>
@@ -232,63 +233,62 @@ const EnhancedGameStats: React.FC = () => {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-        <div>
-          <h2 className="text-3xl font-bold gradient-text">Game Analytics</h2>
-          <p className="text-[var(--text-secondary)] mt-1">
-            Comprehensive insights into your gaming performance
-          </p>
-        </div>
+      <PageHeader
+        eyebrow="Performance"
+        title="Game Analytics"
+        subtitle="Comprehensive insights into your gaming performance"
+        icon={<BarChart3 className="h-6 w-6 text-[var(--accent)]" />}
+        actions={
+          <div className="flex items-center space-x-4">
+            {/* Time Range Selector */}
+            <div className="flex items-center space-x-2 bg-[var(--card)] rounded-xl p-1">
+              {(['1h', '24h', '7d', '30d', 'all'] as const).map((range) => (
+                <motion.button
+                  key={range}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setTimeRange(range)}
+                  className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                    timeRange === range
+                      ? 'bg-[var(--accent)] text-white'
+                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                  }`}
+                >
+                  {range.toUpperCase()}
+                </motion.button>
+              ))}
+            </div>
 
-        <div className="flex items-center space-x-4">
-          {/* Time Range Selector */}
-          <div className="flex items-center space-x-2 bg-[var(--card)] rounded-xl p-1">
-            {(['1h', '24h', '7d', '30d', 'all'] as const).map((range) => (
+            {/* Action Buttons */}
+            <div className="flex items-center space-x-2">
               <motion.button
-                key={range}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => setTimeRange(range)}
-                className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                  timeRange === range
-                    ? 'bg-[var(--accent)] text-white'
-                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                }`}
+                onClick={handleRefresh}
+                className="p-3 rounded-xl bg-[var(--card-hover)] hover:bg-[var(--accent)] transition-all"
               >
-                {range.toUpperCase()}
+                <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
               </motion.button>
-            ))}
+
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="p-3 rounded-xl bg-[var(--card-hover)] hover:bg-[var(--accent)] transition-all"
+              >
+                <Download className="w-5 h-5" />
+              </motion.button>
+
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="p-3 rounded-xl bg-[var(--card-hover)] hover:bg-[var(--accent)] transition-all"
+              >
+                <Share className="w-5 h-5" />
+              </motion.button>
+            </div>
           </div>
-
-          {/* Action Buttons */}
-          <div className="flex items-center space-x-2">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleRefresh}
-              className="p-3 rounded-xl bg-[var(--card-hover)] hover:bg-[var(--accent)] transition-all"
-            >
-              <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
-            </motion.button>
-
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="p-3 rounded-xl bg-[var(--card-hover)] hover:bg-[var(--accent)] transition-all"
-            >
-              <Download className="w-5 h-5" />
-            </motion.button>
-
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="p-3 rounded-xl bg-[var(--card-hover)] hover:bg-[var(--accent)] transition-all"
-            >
-              <Share className="w-5 h-5" />
-            </motion.button>
-          </div>
-        </div>
-      </div>
+        }
+      />
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -332,7 +332,7 @@ const EnhancedGameStats: React.FC = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="glass-effect rounded-2xl p-6"
+          className="glass-effect rounded-2xl p-6 border border-[var(--border)]"
         >
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-xl font-bold flex items-center">
@@ -370,7 +370,7 @@ const EnhancedGameStats: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="glass-effect rounded-2xl p-6"
+          className="glass-effect rounded-2xl p-6 border border-[var(--border)]"
         >
           <h3 className="text-xl font-bold mb-6 flex items-center">
             <PieChart className="w-6 h-6 mr-2 text-[var(--accent)]" />
@@ -457,7 +457,7 @@ const EnhancedGameStats: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="glass-effect rounded-2xl p-6"
+          className="glass-effect rounded-2xl p-6 border border-[var(--border)]"
         >
           <h3 className="text-xl font-bold mb-6 flex items-center">
             <Zap className="w-6 h-6 mr-2 text-[var(--accent)]" />

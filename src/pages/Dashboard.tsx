@@ -1,7 +1,7 @@
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { motion } from 'framer-motion';
-import { BarChart3, Coins, Gamepad2, Trophy, Users, Wallet, Sparkles, ArrowRight } from 'lucide-react';
+import { BarChart3, Coins, Dice1, Gamepad2, Trophy, Users, Wallet, Zap, Sparkles, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import StatCard from '../components/ui/StatCard';
 import RecentGames from '../components/dashboard/RecentGames';
@@ -9,6 +9,7 @@ import TopTokens from '../components/dashboard/TopTokens';
 import Button from '../components/ui/Button';
 import Card, { CardContent } from '../components/ui/Card';
 import PageHeader from '../components/ui/PageHeader';
+import AnimatedBackground from '../components/ui/AnimatedBackground';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -37,34 +38,9 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="relative dashboard-container overflow-hidden">
-      {/* Premium Animated Background */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <motion.div
-          animate={{ 
-            y: [0, -30, 0],
-            opacity: [0.15, 0.25, 0.15]
-          }}
-          transition={{ duration: 8, repeat: Infinity }}
-          className="absolute -top-32 -right-32 h-96 w-96 rounded-full bg-gradient-to-br from-[var(--accent-glow)] to-[var(--secondary-glow)] blur-3xl"
-        />
-        <motion.div
-          animate={{ 
-            y: [0, 30, 0],
-            opacity: [0.1, 0.2, 0.1]
-          }}
-          transition={{ duration: 10, repeat: Infinity, delay: 1 }}
-          className="absolute -bottom-32 -left-32 h-96 w-96 rounded-full bg-[var(--secondary-glow)] blur-3xl"
-        />
-        <motion.div
-          animate={{ 
-            scale: [1, 1.1, 1],
-            opacity: [0.05, 0.15, 0.05]
-          }}
-          transition={{ duration: 12, repeat: Infinity, delay: 2 }}
-          className="absolute top-1/2 left-1/2 h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--gold-glow)] blur-3xl"
-        />
-      </div>
+    <div className="relative dashboard-container">
+      <AnimatedBackground />
+      <div className="pointer-events-none absolute inset-0 dot-grid opacity-30" />
 
       <motion.div
         variants={containerVariants}
@@ -80,8 +56,8 @@ const Dashboard = () => {
             icon={<Trophy className="h-6 w-6 text-[var(--gold)]" />}
             actions={
               <>
-                <Button 
-                  variant="primary" 
+                <Button
+                  variant="primary"
                   onClick={() => navigate('/games')}
                   className="group"
                 >
@@ -89,16 +65,16 @@ const Dashboard = () => {
                   Play games
                   <ArrowRight className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
                 </Button>
-                <Button 
-                  variant="secondary" 
+                <Button
+                  variant="secondary"
                   onClick={() => navigate('/analytics')}
                   className="hover:border-[var(--accent)]"
                 >
                   <BarChart3 className="h-4 w-4" />
                   Analytics
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => navigate('/create')}
                   className="hover:border-[var(--secondary)]"
                 >
@@ -116,7 +92,7 @@ const Dashboard = () => {
               <div className="absolute inset-0 bg-gradient-to-r from-[var(--accent-soft)] via-transparent to-[var(--secondary-soft)] opacity-0 hover:opacity-30 transition-opacity" />
               <CardContent className="relative pt-8 flex flex-col md:flex-row items-center justify-between gap-8">
                 <div className="space-y-4 flex-1">
-                  <motion.h3 
+                  <motion.h3
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.5 }}
@@ -124,7 +100,7 @@ const Dashboard = () => {
                   >
                     Connect your wallet to start playing
                   </motion.h3>
-                  <motion.p 
+                  <motion.p
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.6 }}
@@ -146,7 +122,7 @@ const Dashboard = () => {
           </motion.div>
         ) : null}
 
-        <motion.div 
+        <motion.div
           variants={containerVariants}
           className="grid grid-cols-1 md:grid-cols-3 gap-6"
         >
@@ -185,7 +161,41 @@ const Dashboard = () => {
           ))}
         </motion.div>
 
-        <motion.div 
+        {/* Quick Play Section */}
+        <motion.div variants={itemVariants}>
+          <h3 className="text-lg font-bold text-[var(--text-secondary)] mb-4 flex items-center gap-2">
+            <Zap className="w-5 h-5 text-[var(--accent)]" />
+            Quick Play
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {[
+              { name: 'Coin Flip', path: '/coinflip', icon: Coins, gradient: 'from-yellow-500 to-orange-500', desc: '2x multiplier' },
+              { name: 'Dice Roll', path: '/dice', icon: Dice1, gradient: 'from-red-500 to-pink-500', desc: 'Custom odds' },
+              { name: 'Slots', path: '/slots', icon: Zap, gradient: 'from-green-500 to-emerald-500', desc: 'Up to 50x' },
+            ].map((game) => (
+              <motion.div
+                key={game.path}
+                whileHover={{ y: -4, scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => navigate(game.path)}
+                className="cursor-pointer group relative rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 overflow-hidden hover:border-transparent transition-all"
+              >
+                <div className={`absolute inset-0 bg-gradient-to-br ${game.gradient} opacity-0 group-hover:opacity-10 transition-opacity`} />
+                <div className="relative flex items-center gap-4">
+                  <div className={`h-12 w-12 rounded-xl bg-gradient-to-br ${game.gradient} flex items-center justify-center shadow-lg`}>
+                    <game.icon className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-[var(--text-primary)] group-hover:text-white transition-colors">{game.name}</div>
+                    <div className="text-sm text-[var(--text-secondary)]">{game.desc}</div>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+
+        <motion.div
           variants={containerVariants}
           className="grid grid-cols-1 lg:grid-cols-2 gap-6"
         >
@@ -198,7 +208,7 @@ const Dashboard = () => {
         </motion.div>
 
         {connected && (
-          <motion.div 
+          <motion.div
             variants={itemVariants}
             className="mt-12"
           >

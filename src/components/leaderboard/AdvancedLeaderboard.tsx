@@ -214,9 +214,9 @@ const AdvancedLeaderboard: React.FC<LeaderboardProps> = ({
               }`}
             >
               <div className={`glass-effect rounded-3xl p-6 text-center relative overflow-hidden ${
-                player.rank === 1 ? 'border-2 border-[var(--gold)]' :
-                player.rank === 2 ? 'border-2 border-[var(--silver)]' :
-                'border-2 border-[var(--bronze)]'
+                player.rank === 1 ? 'border-2 border-[var(--gold)] shadow-[0_0_40px_rgba(255,215,0,0.3)]' :
+                player.rank === 2 ? 'border-2 border-[var(--silver)] shadow-[0_0_30px_rgba(192,192,192,0.2)]' :
+                'border-2 border-[var(--bronze)] shadow-[0_0_30px_rgba(205,127,50,0.2)]'
               }`}>
                 {/* Background Glow */}
                 <div className={`absolute inset-0 opacity-20 ${
@@ -304,7 +304,7 @@ const AdvancedLeaderboard: React.FC<LeaderboardProps> = ({
       </div>
 
       {/* Full Leaderboard Table */}
-      <div className="glass-effect rounded-2xl overflow-hidden">
+      <div className="glass-effect rounded-2xl overflow-hidden border border-[var(--border)]">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-[var(--card-hover)]">
@@ -331,12 +331,12 @@ const AdvancedLeaderboard: React.FC<LeaderboardProps> = ({
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: 20 }}
                       transition={{ delay: index * 0.05 }}
-                      className="border-b border-[var(--border)] hover:bg-[var(--card-hover)] transition-colors"
+                      className="border-b border-[var(--border)] hover:bg-[var(--card-hover)] hover:border-l-2 hover:border-l-[var(--accent)] transition-all group"
                     >
                       {/* Rank */}
                       <td className="px-6 py-4">
                         <div className="flex items-center space-x-3">
-                          <div className="text-lg font-bold">{entry.rank}</div>
+                          <div className="text-lg font-bold group-hover:translate-x-1 transition-transform">{entry.rank}</div>
                           {rankChange.type !== 'same' && (
                             <motion.div
                               initial={{ scale: 0 }}

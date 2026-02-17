@@ -270,6 +270,23 @@ body {
   .animate-pulse-slow {
     animation: pulse-slow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
+
+  /* Skeleton loading animation */
+  .skeleton {
+    @apply bg-gradient-to-r from-[var(--card-hover)] via-[var(--border)] to-[var(--card-hover)] bg-[length:200%_100%];
+    animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  }
+
+  /* Dot grid pattern for backgrounds */
+  .dot-grid {
+    background-image: radial-gradient(circle, var(--border) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 /* Keyframe Animations */
